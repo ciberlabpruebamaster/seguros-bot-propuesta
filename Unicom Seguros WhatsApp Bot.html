@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unicom Seguros — Bot WhatsApp</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --green: #25D366;
+    --green-dark: #128C7E;
+    --green-light: #DCF8C6;
+    --bg: #f0f2f5;
+    --white: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #0f766e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --bubble-out: #DCF8C6;
+    --bubble-in: #ffffff;
+    --sidebar: #1a1a2e;
+    --sidebar-active: #16213e;
+    --pill: #e8fdf0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 240px;
+    min-height: 100vh;
+    background: var(--sidebar);
+    color: #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .sidebar-logo .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .wa-icon {
+    width: 32px; height: 32px;
+    background: var(--green);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .wa-icon svg { width: 18px; height: 18px; fill: white; }
+
+  .brand-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    line-height: 1.2;
+  }
+
+  .brand-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    margin-top: 2px;
+  }
+
+  .sidebar nav { padding: 12px 0; flex: 1; }
+
+  .nav-section {
+    padding: 6px 16px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-top: 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    cursor: pointer;
+    font-size: 13px;
+    color: rgba(255,255,255,0.65);
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+    text-decoration: none;
+  }
+
+  .nav-item:hover { color: white; background: rgba(255,255,255,0.06); }
+
+  .nav-item.active {
+    color: white;
+    background: rgba(37,211,102,0.12);
+    border-left-color: var(--green);
+  }
+
+  .nav-icon { font-size: 14px; width: 16px; text-align: center; }
+
+  /* MAIN */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar h1 { font-size: 15px; font-weight: 600; }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--pill);
+    border: 1px solid #86efac;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #166534;
+  }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* CONTENT */
+  .content {
+    padding: 32px;
+    max-width: 1100px;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-body { padding: 20px; }
+
+  /* OVERVIEW STATS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-desc {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* FLOW DIAGRAM */
+  .flow-container {
+    overflow-x: auto;
+    padding: 24px;
+  }
+
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: flex-start;
+    min-width: 800px;
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    width: 100%;
+  }
+
+  .flow-node {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 160px;
+    position: relative;
+    text-align: center;
+  }
+
+  .flow-node.trigger { border-color: var(--green); background: #f0fdf4; color: #166534; }
+  .flow-node.menu { border-color: var(--blue); background: #eff6ff; color: #1d4ed8; }
+  .flow-node.action { border-color: var(--yellow); background: #fffbeb; color: #92400e; }
+  .flow-node.agent { border-color: var(--red); background: #fef2f2; color: #991b1b; }
+  .flow-node.end { border-color: #8b5cf6; background: #f5f3ff; color: #6d28d9; }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    color: var(--muted);
+    font-size: 18px;
+    padding-top: 12px;
+  }
+
+  .flow-branch {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    margin-left: 48px;
+  }
+
+  .flow-branch-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .branch-label {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 600;
+    background: var(--bg);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  /* CHAT PREVIEW */
+  .chat-wrapper {
+    background: #e5ddd5;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .chat-header-wa {
+    background: var(--green-dark);
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .chat-avatar {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .chat-info { flex: 1; }
+  .chat-name { font-weight: 600; font-size: 14px; }
+  .chat-status { font-size: 11px; opacity: 0.8; }
+
+  .chat-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 300px;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .bubble {
+    max-width: 72%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    position: relative;
+  }
+
+  .bubble.in {
+    background: var(--bubble-in);
+    align-self: flex-start;
+    border-top-left-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+
+  .bubble.out {
+    background: var(--bubble-out);
+    align-self: flex-end;
+    border-top-right-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+
+  .bubble-time {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 2px;
+  }
+
+  .flow-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .flow-tab {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: white;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .flow-tab.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .flow-tab:hover:not(.active) {
+    border-color: var(--green);
+    color: var(--green-dark);
+  }
+
+  .chat-flow { display: none; }
+  .chat-flow.active { display: flex; flex-direction: column; gap: 8px; }
+
+  /* TEMPLATES */
+  .templates-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .template-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .template-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .template-name {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+  }
+
+  .template-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-util { background: #eff6ff; color: #1d4ed8; }
+  .badge-mkt { background: #fdf4ff; color: #7e22ce; }
+  .badge-trans { background: #f0fdf4; color: #166534; }
+
+  .template-body { padding: 16px; }
+
+  .template-preview {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    font-family: 'DM Mono', monospace;
+    color: #374151;
+    border-left: 3px solid var(--green);
+    margin-bottom: 12px;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .template-vars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .var-chip {
+    font-size: 11px;
+    background: #f0fdf4;
+    color: var(--accent);
+    border: 1px solid #a7f3d0;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  /* N8N WORKFLOW */
+  .workflow-viz {
+    display: flex;
+    gap: 0;
+    align-items: center;
+    overflow-x: auto;
+    padding: 20px 0;
+  }
+
+  .wf-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 100px;
+  }
+
+  .wf-icon {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    border: 2px solid;
+  }
+
+  .wf-icon.green { background: #f0fdf4; border-color: #86efac; }
+  .wf-icon.blue { background: #eff6ff; border-color: #93c5fd; }
+  .wf-icon.purple { background: #f5f3ff; border-color: #c4b5fd; }
+  .wf-icon.orange { background: #fff7ed; border-color: #fcd34d; }
+  .wf-icon.red { background: #fef2f2; border-color: #fca5a5; }
+
+  .wf-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .wf-arrow {
+    font-size: 20px;
+    color: #d1d5db;
+    margin: 0 4px;
+    padding-bottom: 20px;
+    flex-shrink: 0;
+  }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: #0d1117;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+
+  .code-header {
+    background: #161b22;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #30363d;
+  }
+
+  .code-lang {
+    font-size: 11px;
+    color: #8b949e;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  .copy-btn {
+    font-size: 11px;
+    color: #8b949e;
+    cursor: pointer;
+    background: none;
+    border: 1px solid #30363d;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { color: white; border-color: #8b949e; }
+
+  pre {
+    padding: 16px;
+    overflow-x: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #e6edf3;
+  }
+
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .fn { color: #d2a8ff; }
+  .num { color: #79c0ff; }
+  .key { color: #7ee787; }
+
+  /* SETUP */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+
+  .step {
+    display: flex;
+    gap: 16px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .step:last-child { border-bottom: none; }
+
+  .step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--green);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-content { flex: 1; }
+
+  .step-title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+
+  .step-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .step-tip {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: #166534;
+    margin-top: 10px;
+  }
+
+  /* HORARIO badge */
+  .horario-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff7ed;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .sidebar { width: 56px; }
+    .sidebar .brand-name, .sidebar .brand-sub, .nav-section, .nav-item span { display: none; }
+    .main { margin-left: 56px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .templates-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">
+      <div class="wa-icon">
+        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Unicom Seguros</div>
+        <div class="brand-sub">Bot WhatsApp</div>
+      </div>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-section">General</div>
+    <a class="nav-item active" onclick="showSection('overview', this)">
+      <span class="nav-icon">📊</span>
+      <span>Resumen</span>
+    </a>
+    <a class="nav-item" onclick="showSection('flujos', this)">
+      <span class="nav-icon">💬</span>
+      <span>Flujos del Bot</span>
+    </a>
+    <a class="nav-item" onclick="showSection('templates', this)">
+      <span class="nav-icon">📋</span>
+      <span>Plantillas Meta</span>
+    </a>
+    <div class="nav-section">Técnico</div>
+    <a class="nav-item" onclick="showSection('n8n', this)">
+      <span class="nav-icon">⚙️</span>
+      <span>Flujo n8n</span>
+    </a>
+    <a class="nav-item" onclick="showSection('setup', this)">
+      <span class="nav-icon">🚀</span>
+      <span>Configuración</span>
+    </a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <h1>Bot WhatsApp — Unicom Seguros</h1>
+    <div class="status-pill">
+      <div class="dot"></div>
+      Listo para implementar
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="section active" id="overview">
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Flujos automatizados</div>
+          <div class="stat-value" style="color: var(--green)">5</div>
+          <div class="stat-desc">Cotización · Siniestro · Pago · FAQ · Agente</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Plantillas para Meta</div>
+          <div class="stat-value" style="color: var(--blue)">6</div>
+          <div class="stat-desc">Listas para aprobación (24-48h)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Ramos cubiertos</div>
+          <div class="stat-value" style="color: var(--yellow)">4</div>
+          <div class="stat-desc">Auto · Vida · GMM · Hogar</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Horario de agentes</div>
+          <div class="stat-value" style="color: var(--red); font-size: 18px; padding-top: 6px;">L–V</div>
+          <div class="stat-desc">9:00 h – 18:00 h (fuera de hora → bot)</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🗺️ Arquitectura general del bot</div>
+          <div class="horario-badge">⏰ Agentes L-V 9h-18h</div>
+        </div>
+        <div class="flow-container">
+          <div style="display:flex; flex-direction:column; gap:16px; min-width:760px;">
+
+            <!-- Trigger row -->
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div class="flow-node trigger">📲 Mensaje recibido</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-node menu">¿Es nuevo usuario?</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-node trigger">👋 Menú de Bienvenida</div>
+            </div>
+
+            <!-- Menu options -->
+            <div style="margin-left:40px; border-left:2px dashed #d1d5db; padding-left:20px;">
+              <div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:.06em;">Opciones del menú principal</div>
+              <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                <div class="flow-node action" style="min-width:130px;">1️⃣ Cotización</div>
+                <div class="flow-node action" style="min-width:130px;">2️⃣ Mi Póliza</div>
+                <div class="flow-node action" style="min-width:130px;">3️⃣ Siniestro</div>
+                <div class="flow-node action" style="min-width:130px;">4️⃣ Pagos</div>
+                <div class="flow-node action" style="min-width:130px;">5️⃣ Preguntas</div>
+                <div class="flow-node agent" style="min-width:130px;">6️⃣ Hablar con agente</div>
+              </div>
+            </div>
+
+            <!-- Escalation -->
+            <div style="display:flex; align-items:center; gap:8px; margin-left:40px; border-left:2px dashed #d1d5db; padding-left:20px;">
+              <div class="flow-node agent">🕐 ¿Fuera de horario?</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-node end">📝 Crear ticket</div>
+              <div style="font-size:12px; color:var(--muted); padding-left:12px;">Bot responde e informa horario de atención</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">💬 Mensaje de bienvenida</div>
+        </div>
+        <div class="card-body">
+          <div class="chat-wrapper" style="max-width:420px;">
+            <div class="chat-header-wa">
+              <div class="chat-avatar">U</div>
+              <div class="chat-info">
+                <div class="chat-name">Unicom Seguros</div>
+                <div class="chat-status">en línea</div>
+              </div>
+            </div>
+            <div class="chat-body">
+              <div class="bubble in">
+                👋 ¡Bienvenido/a a <strong>Unicom Seguros</strong>!<br><br>
+                Soy vuestro asistente virtual. Puedo ayudaros con:<br><br>
+                1️⃣ <strong>Solicitar una cotización</strong><br>
+                2️⃣ <strong>Consultar vuestra póliza</strong><br>
+                3️⃣ <strong>Reportar un siniestro</strong><br>
+                4️⃣ <strong>Estado de pagos</strong><br>
+                5️⃣ <strong>Preguntas frecuentes</strong><br>
+                6️⃣ <strong>Hablar con un agente</strong><br><br>
+                Replied con el número de la opción que necesitéis.
+                <div class="bubble-time">09:31 ✓✓</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FLUJOS -->
+    <div class="section" id="flujos">
+
+      <div class="flow-tabs">
+        <div class="flow-tab active" onclick="showFlow('cotizacion', this)">1️⃣ Cotización</div>
+        <div class="flow-tab" onclick="showFlow('poliza', this)">2️⃣ Mi Póliza</div>
+        <div class="flow-tab" onclick="showFlow('siniestro', this)">3️⃣ Siniestro</div>
+        <div class="flow-tab" onclick="showFlow('pagos', this)">4️⃣ Pagos</div>
+        <div class="flow-tab" onclick="showFlow('agente', this)">6️⃣ Agente</div>
+      </div>
+
+      <!-- COTIZACIÓN -->
+      <div id="flow-cotizacion" class="chat-flow active">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">💬 Conversación</div></div>
+            <div class="card-body" style="padding:0;">
+              <div class="chat-wrapper">
+                <div class="chat-header-wa">
+                  <div class="chat-avatar">U</div>
+                  <div class="chat-info"><div class="chat-name">Unicom Seguros</div><div class="chat-status">en línea</div></div>
+                </div>
+                <div class="chat-body">
+                  <div class="bubble out">1<div class="bubble-time">10:02</div></div>
+                  <div class="bubble in">¡Perfecto! Vamos a preparar vuestra cotización. ¿Qué tipo de seguro necesitáis?<br><br>🚗 <strong>AUTO</strong> — Vehículo<br>❤️ <strong>VIDA</strong> — Seguro de vida<br>🏥 <strong>GMM</strong> — Gastos médicos<br>🏠 <strong>HOGAR</strong> — Hogar o negocio<br><br>Replied con la palabra en negrita.<div class="bubble-time">10:02 ✓✓</div></div>
+                  <div class="bubble out">AUTO<div class="bubble-time">10:03</div></div>
+                  <div class="bubble in">Seguro de automóvil. Para prepararos la cotización necesito algunos datos:<br><br>¿Cuál es la <strong>matrícula</strong> del vehículo?<div class="bubble-time">10:03 ✓✓</div></div>
+                  <div class="bubble out">1234ABC<div class="bubble-time">10:04</div></div>
+                  <div class="bubble in">✅ Recibido. ¿Cuál es vuestro <strong>código postal</strong>?<div class="bubble-time">10:04 ✓✓</div></div>
+                  <div class="bubble out">28001<div class="bubble-time">10:04</div></div>
+                  <div class="bubble in">Perfecto. Tengo todos los datos. Un agente de <strong>Unicom Seguros</strong> os contactará en menos de <strong>2 horas</strong> con vuestra cotización personalizada.<br><br>📋 Ref. solicitud: <strong>#COT-2847</strong><br><br>¿Necesitáis algo más?<div class="bubble-time">10:05 ✓✓</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">🔀 Lógica del flujo</div></div>
+            <div class="card-body">
+              <div class="steps">
+                <div class="step">
+                  <div class="step-num">1</div>
+                  <div class="step-content">
+                    <div class="step-title">Selección de ramo</div>
+                    <div class="step-desc">Bot presenta las 4 categorías. Detecta la respuesta del usuario con keywords: AUTO, VIDA, GMM, HOGAR (también acepta variantes: "coche", "médico", etc.)</div>
+                  </div>
+                </div>
+                <div class="step">
+                  <div class="step-num">2</div>
+                  <div class="step-content">
+                    <div class="step-title">Recopilación de datos</div>
+                    <div class="step-desc">Según el ramo, solicita campos específicos:<br>• <strong>Auto:</strong> Matrícula, CP, conductor<br>• <strong>Vida:</strong> Edad, fumador, capital<br>• <strong>GMM:</strong> Edad, asegurados, CP<br>• <strong>Hogar:</strong> CP, tipo, m²</div>
+                  </div>
+                </div>
+                <div class="step">
+                  <div class="step-num">3</div>
+                  <div class="step-content">
+                    <div class="step-title">Creación de ticket</div>
+                    <div class="step-desc">Guarda lead en CRM con todos los datos y genera referencia única #COT-XXXX</div>
+                    <div class="step-tip">💡 El agente recibe notificación inmediata por el canal interno (email / Slack / CRM)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PÓLIZA -->
+      <div id="flow-poliza" class="chat-flow">
+        <div class="card">
+          <div class="card-header"><div class="card-title">💬 Consulta de póliza</div></div>
+          <div class="card-body" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div class="chat-wrapper">
+              <div class="chat-header-wa">
+                <div class="chat-avatar">U</div>
+                <div class="chat-info"><div class="chat-name">Unicom Seguros</div><div class="chat-status">en línea</div></div>
+              </div>
+              <div class="chat-body">
+                <div class="bubble out">2<div class="bubble-time">11:00</div></div>
+                <div class="bubble in">Para consultar vuestra póliza, indicadnos vuestro <strong>número de póliza</strong> o <strong>DNI/NIE</strong>:<div class="bubble-time">11:00 ✓✓</div></div>
+                <div class="bubble out">12345678A<div class="bubble-time">11:01</div></div>
+                <div class="bubble in">✅ Encontré vuestras pólizas:<br><br>📄 <strong>POL-AUTO-00291</strong><br>Vehículo: SEAT Ibiza 2021<br>Vencimiento: 15/09/2026<br>Estado: 🟢 Vigente<br><br>📄 <strong>POL-HOG-00088</strong><br>Hogar: C/ Mayor 14, Madrid<br>Vencimiento: 03/01/2027<br>Estado: 🟢 Vigente<br><br>¿Necesitáis algún documento o gestión?<div class="bubble-time">11:01 ✓✓</div></div>
+              </div>
+            </div>
+            <div>
+              <div class="step-tip" style="margin-bottom:12px;">📌 <strong>Requiere integración con vuestro CRM/sistema de pólizas</strong> para consulta en tiempo real. Si no tenéis API, el bot puede solicitar datos y el agente responde.</div>
+              <p style="font-size:13px; color:var(--muted); line-height:1.6;">El bot valida el formato del DNI/NIE y número de póliza antes de consultar. Si no encuentra resultado, ofrece derivar a un agente o abrir un ticket de consulta.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SINIESTRO -->
+      <div id="flow-siniestro" class="chat-flow">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">💬 Reporte de siniestro</div></div>
+            <div class="card-body" style="padding:0;">
+              <div class="chat-wrapper">
+                <div class="chat-header-wa">
+                  <div class="chat-avatar">U</div>
+                  <div class="chat-info"><div class="chat-name">Unicom Seguros</div><div class="chat-status">en línea</div></div>
+                </div>
+                <div class="chat-body">
+                  <div class="bubble out">3<div class="bubble-time">14:20</div></div>
+                  <div class="bubble in">Lamentamos que hayáis tenido un incidente. Os ayudamos a gestionar el parte.<br><br>¿Cuál es vuestro <strong>número de póliza</strong>?<div class="bubble-time">14:20 ✓✓</div></div>
+                  <div class="bubble out">POL-AUTO-00291<div class="bubble-time">14:21</div></div>
+                  <div class="bubble in">Póliza verificada ✅<br><br>¿Qué tipo de incidente es?<br>🚗 <strong>COLISIÓN</strong><br>🔥 <strong>INCENDIO</strong><br>💧 <strong>INUNDACIÓN</strong><br>🔓 <strong>ROBO</strong><br>🌪️ <strong>DAÑOS NATURALES</strong><br>❓ <strong>OTRO</strong><div class="bubble-time">14:21 ✓✓</div></div>
+                  <div class="bubble out">COLISIÓN<div class="bubble-time">14:22</div></div>
+                  <div class="bubble in">Por favor, enviadnos <strong>2-3 fotografías</strong> del vehículo mostrando los daños.<div class="bubble-time">14:22 ✓✓</div></div>
+                  <div class="bubble in">📸 Fotos recibidas (3). <br><br>✅ <strong>Parte #SIN-8821 abierto</strong><br>Un gestor de siniestros os contactará en <strong>menos de 4 horas</strong> hábiles.<br><br>Número de seguimiento: <strong>#SIN-8821</strong><div class="bubble-time">14:25 ✓✓</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">📋 Datos que recopila</div></div>
+            <div class="card-body">
+              <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Número de póliza</div><div class="step-desc">Verifica que la póliza existe y está vigente</div></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Tipo de siniestro</div><div class="step-desc">Clasifica el incidente para asignar al gestor correcto</div></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Fotografías / documentos</div><div class="step-desc">WhatsApp permite recibir imágenes directamente. Se adjuntan al ticket automáticamente.</div></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Descripción libre</div><div class="step-desc">Texto opcional que el cliente puede enviar con más contexto</div><div class="step-tip">⚡ El ticket se crea automáticamente en el CRM con toda la información adjunta</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGOS -->
+      <div id="flow-pagos" class="chat-flow">
+        <div class="card">
+          <div class="card-header"><div class="card-title">💬 Recordatorio de pagos</div></div>
+          <div class="card-body" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div class="chat-wrapper">
+              <div class="chat-header-wa">
+                <div class="chat-avatar">U</div>
+                <div class="chat-info"><div class="chat-name">Unicom Seguros</div><div class="chat-status">en línea</div></div>
+              </div>
+              <div class="chat-body">
+                <div class="bubble in" style="font-size:12px; text-align:center; background:#f3f4f6; color:var(--muted); align-self:center;">Notificación automática — 7 días antes</div>
+                <div class="bubble in">📋 <strong>Recordatorio de vencimiento</strong><br><br>Hola, María.<br><br>Vuestra póliza <strong>POL-AUTO-00291</strong> vence el <strong>15/09/2026</strong>.<br><br>Importe de renovación: <strong>487,50 €</strong><br><br>¿Queréis renovarla?<br>✅ Replied <strong>SÍ</strong> para confirmar<br>❌ Replied <strong>NO</strong> para hablar con un agente<div class="bubble-time">09:00 ✓✓</div></div>
+                <div class="bubble out">SÍ<div class="bubble-time">09:05</div></div>
+                <div class="bubble in">¡Perfecto! Un agente os enviará el enlace de pago seguro en breve.<br><br>¿Necesitáis algo más?<div class="bubble-time">09:05 ✓✓</div></div>
+              </div>
+            </div>
+            <div>
+              <p style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:12px;">El bot envía recordatorios automáticos según este calendario:</p>
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--bg); border-radius:8px;">
+                  <span>📅</span>
+                  <div><div style="font-size:13px; font-weight:600;">30 días antes</div><div style="font-size:12px; color:var(--muted);">Aviso inicial de vencimiento</div></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--bg); border-radius:8px;">
+                  <span>⚠️</span>
+                  <div><div style="font-size:13px; font-weight:600;">7 días antes</div><div style="font-size:12px; color:var(--muted);">Recordatorio con importe y opción de renovar</div></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:#fff7ed; border-radius:8px; border:1px solid #fcd34d;">
+                  <span>🔴</span>
+                  <div><div style="font-size:13px; font-weight:600;">1 día antes</div><div style="font-size:12px; color:var(--muted);">Último aviso urgente</div></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:#fef2f2; border-radius:8px; border:1px solid #fca5a5;">
+                  <span>❌</span>
+                  <div><div style="font-size:13px; font-weight:600;">Día de vencimiento</div><div style="font-size:12px; color:var(--muted);">Notificación de póliza vencida + oferta de reactivación</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AGENTE -->
+      <div id="flow-agente" class="chat-flow">
+        <div class="card">
+          <div class="card-header"><div class="card-title">💬 Derivación a agente humano</div></div>
+          <div class="card-body" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div>
+              <p style="font-size:13px; font-weight:600; margin-bottom:12px;">✅ Dentro de horario (L-V 9h-18h)</p>
+              <div class="chat-wrapper" style="margin-bottom:0">
+                <div class="chat-header-wa"><div class="chat-avatar">U</div><div class="chat-info"><div class="chat-name">Unicom Seguros</div></div></div>
+                <div class="chat-body">
+                  <div class="bubble out">6<div class="bubble-time">10:30</div></div>
+                  <div class="bubble in">Voy a conectaros con un agente. Un momento, por favor... ⏳<div class="bubble-time">10:30 ✓✓</div></div>
+                  <div class="bubble in">✅ Conectado con <strong>Carlos Ruiz</strong><br>Agente de Unicom Seguros<br><br>¡Hola! ¿En qué puedo ayudaros?<div class="bubble-time">10:31 ✓✓</div></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p style="font-size:13px; font-weight:600; margin-bottom:12px;">🌙 Fuera de horario</p>
+              <div class="chat-wrapper">
+                <div class="chat-header-wa"><div class="chat-avatar">U</div><div class="chat-info"><div class="chat-name">Unicom Seguros</div></div></div>
+                <div class="chat-body">
+                  <div class="bubble out">6<div class="bubble-time">22:15</div></div>
+                  <div class="bubble in">Nuestro equipo de atención está disponible de <strong>lunes a viernes de 9:00 a 18:00 h</strong>.<br><br>Son las 22:15 h. Dejadnos vuestro mensaje y un agente os contactará mañana a primera hora.<br><br>¿Cuál es vuestro motivo de consulta?<div class="bubble-time">22:15 ✓✓</div></div>
+                  <div class="bubble out">Quiero ampliar mi cobertura<div class="bubble-time">22:17</div></div>
+                  <div class="bubble in">✅ Mensaje guardado. Un agente os contactará mañana por la mañana.<br><br>Ref: <strong>#MSG-1104</strong><div class="bubble-time">22:17 ✓✓</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TEMPLATES -->
+    <div class="section" id="templates">
+      <div style="background:#fffbeb; border:1px solid #fcd34d; border-radius:10px; padding:14px 18px; margin-bottom:20px; font-size:13px; color:#92400e;">
+        ⚠️ <strong>Importante:</strong> Las plantillas deben aprobarse en Meta Business Manager antes de usarlas. El proceso tarda entre 24 y 48 horas. Las conversaciones iniciadas por el usuario no necesitan plantilla.
+      </div>
+      <div class="templates-grid">
+
+        <div class="template-card">
+          <div class="template-header">
+            <div class="template-name">unicom_bienvenida</div>
+            <div class="template-badge badge-util">Utilidad</div>
+          </div>
+          <div class="template-body">
+            <div class="template-preview">👋 ¡Bienvenido/a a Unicom Seguros, {{1}}!
+
+Soy vuestro asistente virtual. ¿En qué puedo ayudaros hoy?
+
+1️⃣ Solicitar cotización
+2️⃣ Consultar póliza
+3️⃣ Reportar siniestro
+4️⃣ Estado de pagos
+5️⃣ Hablar con agente
+
+Replied con el número de opción.</div>
+            <div class="template-vars">
+              <span class="var-chip">{{1}} nombre_cliente</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <div class="template-header">
+            <div class="template-name">unicom_recordatorio_pago</div>
+            <div class="template-badge badge-util">Utilidad</div>
+          </div>
+          <div class="template-body">
+            <div class="template-preview">📋 *Recordatorio de vencimiento*
+
+Hola, {{1}}.
+
+Vuestra póliza *{{2}}* vence el *{{3}}*.
+
+Importe de renovación: *{{4}} €*
+
+¿Queréis renovarla?
+✅ Replied SÍ para confirmar
+❌ Replied NO para hablar con agente
+
+Unicom Seguros · {{5}}</div>
+            <div class="template-vars">
+              <span class="var-chip">{{1}} nombre</span>
+              <span class="var-chip">{{2}} num_poliza</span>
+              <span class="var-chip">{{3}} fecha_vto</span>
+              <span class="var-chip">{{4}} importe</span>
+              <span class="var-chip">{{5}} telefono</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <div class="template-header">
+            <div class="template-name">unicom_siniestro_abierto</div>
+            <div class="template-badge badge-trans">Transaccional</div>
+          </div>
+          <div class="template-body">
+            <div class="template-preview">✅ *Parte de siniestro abierto*
+
+Hola, {{1}}.
+
+Hemos registrado vuestro siniestro correctamente.
+
+🔖 Referencia: *{{2}}*
+📋 Tipo: {{3}}
+🕐 Fecha: {{4}}
+
+Un gestor os contactará en un plazo máximo de *{{5}} horas hábiles*.
+
+Unicom Seguros</div>
+            <div class="template-vars">
+              <span class="var-chip">{{1}} nombre</span>
+              <span class="var-chip">{{2}} ref_siniestro</span>
+              <span class="var-chip">{{3}} tipo</span>
+              <span class="var-chip">{{4}} fecha</span>
+              <span class="var-chip">{{5}} horas_respuesta</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <div class="template-header">
+            <div class="template-name">unicom_cotizacion_lista</div>
+            <div class="template-badge badge-trans">Transaccional</div>
+          </div>
+          <div class="template-body">
+            <div class="template-preview">🎉 *¡Vuestra cotización está lista!*
+
+Hola, {{1}}.
+
+Hemos preparado vuestra cotización personalizada para el seguro de *{{2}}*.
+
+💶 Prima desde: *{{3}} €/año*
+📋 Referencia: {{4}}
+
+Un agente os enviará los detalles completos en breve.
+
+¿Queréis que os llamemos?
+📞 Replied SÍ con vuestro teléfono</div>
+            <div class="template-vars">
+              <span class="var-chip">{{1}} nombre</span>
+              <span class="var-chip">{{2}} ramo</span>
+              <span class="var-chip">{{3}} prima</span>
+              <span class="var-chip">{{4}} ref_cotizacion</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <div class="template-header">
+            <div class="template-name">unicom_fuera_horario</div>
+            <div class="template-badge badge-util">Utilidad</div>
+          </div>
+          <div class="template-body">
+            <div class="template-preview">🌙 Gracias por contactar con Unicom Seguros.
+
+En estos momentos nuestro equipo no está disponible.
+
+⏰ Horario de atención:
+Lunes a viernes, 9:00 – 18:00 h
+
+Hemos registrado vuestro mensaje. Un agente os contactará el próximo día hábil.
+
+Ref: *{{1}}*
+
+Para emergencias de siniestros: *{{2}}*</div>
+            <div class="template-vars">
+              <span class="var-chip">{{1}} ref_mensaje</span>
+              <span class="var-chip">{{2}} tel_emergencias</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <div class="template-header">
+            <div class="template-name">unicom_poliza_renovada</div>
+            <div class="template-badge badge-trans">Transaccional</div>
+          </div>
+          <div class="template-body">
+            <div class="template-preview">✅ *Póliza renovada correctamente*
+
+Hola, {{1}}.
+
+Vuestra póliza *{{2}}* ha sido renovada.
+
+📅 Nueva vigencia: {{3}} – {{4}}
+💶 Importe cobrado: *{{5}} €*
+
+Os enviamos la documentación por email a {{6}}.
+
+Gracias por confiar en Unicom Seguros 🙏</div>
+            <div class="template-vars">
+              <span class="var-chip">{{1}} nombre</span>
+              <span class="var-chip">{{2}} num_poliza</span>
+              <span class="var-chip">{{3}} fecha_ini</span>
+              <span class="var-chip">{{4}} fecha_fin</span>
+              <span class="var-chip">{{5}} importe</span>
+              <span class="var-chip">{{6}} email</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- N8N -->
+    <div class="section" id="n8n">
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">⚙️ Arquitectura del workflow en n8n</div></div>
+        <div class="card-body">
+          <div class="workflow-viz">
+            <div class="wf-node"><div class="wf-icon green">📲</div><div class="wf-label">WhatsApp<br>Trigger</div></div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-node"><div class="wf-icon blue">🔍</div><div class="wf-label">Parse<br>Message</div></div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-node"><div class="wf-icon purple">🔀</div><div class="wf-label">Router<br>(Switch)</div></div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-node"><div class="wf-icon orange">🤖</div><div class="wf-label">AI Agent<br>(Claude/GPT)</div></div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-node"><div class="wf-icon blue">💾</div><div class="wf-label">CRM<br>Update</div></div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-node"><div class="wf-icon green">📤</div><div class="wf-label">Send<br>WhatsApp</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">📄 Workflow JSON — Pegad en n8n</div></div>
+        <div class="card-body">
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">json — n8n workflow</span>
+              <button class="copy-btn" onclick="copyCode(this, 'n8n-code')">Copiar</button>
+            </div>
+            <pre id="n8n-code"><span class="cm">// Pegad este JSON en n8n: Workflows → Import from clipboard</span>
+{
+  <span class="key">"name"</span>: <span class="str">"Unicom Seguros — WhatsApp Bot"</span>,
+  <span class="key">"nodes"</span>: [
+    {
+      <span class="key">"name"</span>: <span class="str">"WhatsApp Trigger"</span>,
+      <span class="key">"type"</span>: <span class="str">"n8n-nodes-base.whatsAppTrigger"</span>,
+      <span class="key">"parameters"</span>: { <span class="key">"events"</span>: [<span class="str">"messages"</span>] }
+    },
+    {
+      <span class="key">"name"</span>: <span class="str">"Parse Message"</span>,
+      <span class="key">"type"</span>: <span class="str">"n8n-nodes-base.code"</span>,
+      <span class="key">"parameters"</span>: {
+        <span class="key">"code"</span>: <span class="str">"const msg = $input.first().json.entry[0].changes[0].value.messages[0];\nconst contact = $input.first().json.entry[0].changes[0].value.contacts[0];\nreturn {\n  from: msg.from,\n  text: msg.text?.body?.toLowerCase().trim() || '',\n  type: msg.type,\n  name: contact.profile.name,\n  timestamp: msg.timestamp\n};"</span>
+      }
+    },
+    {
+      <span class="key">"name"</span>: <span class="str">"Router"</span>,
+      <span class="key">"type"</span>: <span class="str">"n8n-nodes-base.switch"</span>,
+      <span class="key">"parameters"</span>: {
+        <span class="key">"rules"</span>: {
+          <span class="key">"values"</span>: [
+            { <span class="key">"conditions"</span>: [{ <span class="key">"value1"</span>: <span class="str">"={{ $json.text }}"</span>, <span class="key">"operation"</span>: <span class="str">"contains"</span>, <span class="key">"value2"</span>: <span class="str">"1"</span> }], <span class="key">"output"</span>: <span class="num">0</span> },
+            { <span class="key">"conditions"</span>: [{ <span class="key">"value1"</span>: <span class="str">"={{ $json.text }}"</span>, <span class="key">"operation"</span>: <span class="str">"contains"</span>, <span class="key">"value2"</span>: <span class="str">"2"</span> }], <span class="key">"output"</span>: <span class="num">1</span> },
+            { <span class="key">"conditions"</span>: [{ <span class="key">"value1"</span>: <span class="str">"={{ $json.text }}"</span>, <span class="key">"operation"</span>: <span class="str">"contains"</span>, <span class="key">"value2"</span>: <span class="str">"3"</span> }], <span class="key">"output"</span>: <span class="num">2</span> },
+            { <span class="key">"conditions"</span>: [{ <span class="key">"value1"</span>: <span class="str">"={{ $json.text }}"</span>, <span class="key">"operation"</span>: <span class="str">"contains"</span>, <span class="key">"value2"</span>: <span class="str">"4"</span> }], <span class="key">"output"</span>: <span class="num">3</span> },
+            { <span class="key">"conditions"</span>: [{ <span class="key">"value1"</span>: <span class="str">"={{ $json.text }}"</span>, <span class="key">"operation"</span>: <span class="str">"contains"</span>, <span class="key">"value2"</span>: <span class="str">"6"</span> }], <span class="key">"output"</span>: <span class="num">4</span> }
+          ]
+        }
+      }
+    },
+    {
+      <span class="key">"name"</span>: <span class="str">"Check Business Hours"</span>,
+      <span class="key">"type"</span>: <span class="str">"n8n-nodes-base.code"</span>,
+      <span class="key">"parameters"</span>: {
+        <span class="key">"code"</span>: <span class="str">"const now = new Date();\nconst hour = now.getHours();\nconst day = now.getDay(); // 0=Dom, 6=Sab\nconst isBusinessHours = day >= 1 && day <= 5 && hour >= 9 && hour < 18;\nreturn { ...($input.first().json), isBusinessHours };"</span>
+      }
+    },
+    {
+      <span class="key">"name"</span>: <span class="str">"Send WhatsApp"</span>,
+      <span class="key">"type"</span>: <span class="str">"n8n-nodes-base.whatsApp"</span>,
+      <span class="key">"parameters"</span>: {
+        <span class="key">"operation"</span>: <span class="str">"sendMessage"</span>,
+        <span class="key">"phoneNumberId"</span>: <span class="str">"={{ $env.WA_PHONE_NUMBER_ID }}"</span>,
+        <span class="key">"recipientPhoneNumber"</span>: <span class="str">"={{ $json.from }}"</span>,
+        <span class="key">"textBody"</span>: <span class="str">"={{ $json.response }}"</span>
+      }
+    }
+  ]
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">🔑 Variables de entorno requeridas</div></div>
+        <div class="card-body">
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">.env</span>
+              <button class="copy-btn" onclick="copyCode(this, 'env-code')">Copiar</button>
+            </div>
+            <pre id="env-code"><span class="cm"># WhatsApp Business API (Meta Developer Portal)</span>
+<span class="key">WA_PHONE_NUMBER_ID</span>=<span class="str">tu_phone_number_id</span>
+<span class="key">WA_ACCESS_TOKEN</span>=<span class="str">tu_access_token_permanente</span>
+<span class="key">WA_VERIFY_TOKEN</span>=<span class="str">unicom_verify_2025</span>  <span class="cm"># cualquier string secreto</span>
+<span class="key">WA_BUSINESS_ACCOUNT_ID</span>=<span class="str">tu_business_account_id</span>
+
+<span class="cm"># CRM / Base de datos de pólizas</span>
+<span class="key">CRM_API_URL</span>=<span class="str">https://vuestro-crm.com/api/v1</span>
+<span class="key">CRM_API_KEY</span>=<span class="str">tu_crm_api_key</span>
+
+<span class="cm"># Notificaciones internas (opcional)</span>
+<span class="key">SLACK_WEBHOOK_URL</span>=<span class="str">https://hooks.slack.com/...</span>
+<span class="key">NOTIFY_EMAIL</span>=<span class="str">agentes@unicom-seguros.es</span>
+
+<span class="cm"># IA para respuestas libres (opcional)</span>
+<span class="key">OPENAI_API_KEY</span>=<span class="str">sk-...</span>
+<span class="key">ANTHROPIC_API_KEY</span>=<span class="str">sk-ant-...</span></pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SETUP -->
+    <div class="section" id="setup">
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">🚀 Guía de implementación paso a paso</div></div>
+        <div class="card-body">
+          <div class="steps">
+
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">Crear cuenta Meta Business</div>
+                <div class="step-desc">Acceder a <strong>business.facebook.com</strong> y crear o verificar vuestra cuenta de empresa. Necesitaréis documentación oficial de la empresa para la verificación.</div>
+                <div class="step-tip">💡 La verificación puede tardar 2-5 días hábiles. Iniciadla cuanto antes.</div>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">Crear app en Meta Developer Portal</div>
+                <div class="step-desc">En <strong>developers.facebook.com</strong>: Crear nueva app → tipo "Business" → añadir producto "WhatsApp". Aquí obtendréis el <strong>Phone Number ID</strong> y el <strong>Access Token</strong>.</div>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">Instalar y configurar n8n</div>
+                <div class="step-desc">Opción recomendada: n8n Cloud (sin servidor). Alternativa: Docker en vuestro servidor.<br><br>
+                <code style="background:var(--bg); padding:2px 6px; border-radius:4px; font-size:12px;">docker run -it --rm --name n8n -p 5678:5678 n8nio/n8n</code></div>
+                <div class="step-tip">💡 n8n Cloud tiene plan gratuito suficiente para empezar.</div>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <div class="step-title">Configurar webhook de WhatsApp</div>
+                <div class="step-desc">En la app de Meta, sección "Webhooks", añadid la URL del trigger de n8n:<br>
+                <code style="background:var(--bg); padding:2px 6px; border-radius:4px; font-size:12px;">https://vuestro-n8n.com/webhook/whatsapp-unicom</code><br><br>
+                Subscribid a los eventos: <strong>messages</strong>, <strong>message_deliveries</strong>, <strong>message_reads</strong></div>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-num">5</div>
+              <div class="step-content">
+                <div class="step-title">Importar workflow en n8n</div>
+                <div class="step-desc">En n8n: Workflows → New → Import from clipboard → pegar el JSON de la pestaña "Flujo n8n". Configurad las credenciales de WhatsApp Business API.</div>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-num">6</div>
+              <div class="step-content">
+                <div class="step-title">Enviar plantillas a aprobación</div>
+                <div class="step-desc">En Meta Business Manager → WhatsApp → Plantillas de mensajes → Nueva plantilla. Añadid las 6 plantillas de la pestaña "Plantillas Meta". Tiempo de aprobación: 24-48h.</div>
+                <div class="step-tip">⚠️ Sin plantillas aprobadas, el bot solo puede responder a mensajes que el usuario inicia primero (ventana de 24h).</div>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-num">7</div>
+              <div class="step-content">
+                <div class="step-title">Pruebas y activación</div>
+                <div class="step-desc">Realizad pruebas con vuestro propio número primero. Verificad cada flujo: cotización, siniestro, pagos, derivación a agente dentro y fuera de horario. Cuando todo funcione, activad el número de WhatsApp oficial de Unicom Seguros.</div>
+                <div class="step-tip">✅ ¡Listo! El bot empezará a atender a vuestros clientes automáticamente.</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+
+<script>
+  function showSection(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    el.classList.add('active');
+  }
+
+  function showFlow(id, el) {
+    document.querySelectorAll('.chat-flow').forEach(f => f.classList.remove('active'));
+    document.querySelectorAll('.flow-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('flow-' + id).classList.add('active');
+    el.classList.add('active');
+  }
+
+  function copyCode(btn, id) {
+    const el = document.getElementById(id);
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copiado';
+      setTimeout(() => btn.textContent = 'Copiar', 2000);
+    });
+  }
+</script>
+</body>
+</html>
