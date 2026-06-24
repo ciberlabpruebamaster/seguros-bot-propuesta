@@ -1,0 +1,291 @@
+{
+  "name": "Bot WhatsApp Seguros",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-seguros",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": {}
+      },
+      "id": "respond-meta",
+      "name": "Responder OK a Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [460, 260]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer datos del mensaje de WhatsApp\nconst body = $input.first().json.body;\n\nlet from = '';\nlet messageText = '';\nlet messageType = '';\n\ntry {\n  const entry = body.entry?.[0];\n  const change = entry?.changes?.[0];\n  const value = change?.value;\n  const message = value?.messages?.[0];\n  \n  from = message?.from || '';\n  messageType = message?.type || '';\n  \n  if (messageType === 'text') {\n    messageText = message?.text?.body?.trim() || '';\n  } else if (messageType === 'interactive') {\n    const interactive = message?.interactive;\n    if (interactive?.type === 'button_reply') {\n      messageText = interactive?.button_reply?.id || '';\n    } else if (interactive?.type === 'list_reply') {\n      messageText = interactive?.list_reply?.id || '';\n    }\n  }\n} catch(e) {\n  // Verificación de webhook GET (Meta lo hace al configurar)\n}\n\nreturn [{ json: { from, messageText, messageType, rawBody: body } }];"
+      },
+      "id": "extract-message",
+      "name": "Extraer Mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageText }}",
+                    "rightValue": "1",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cotizacion"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageText }}",
+                    "rightValue": "2",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "poliza"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageText }}",
+                    "rightValue": "3",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "siniestro"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageText }}",
+                    "rightValue": "4",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pagos"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageText }}",
+                    "rightValue": "5",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "faq"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageText }}",
+                    "rightValue": "6",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "agente"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "id": "switch-opcion",
+      "name": "¿Qué opción eligió?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const from = $input.first().json.from;\nconst phoneNumberId = 'TU_PHONE_NUMBER_ID';\nconst token = 'TU_ACCESS_TOKEN';\n\nconst mensaje = {\n  messaging_product: 'whatsapp',\n  to: from,\n  type: 'text',\n  text: {\n    body: '👋 ¡Bienvenido/a a tu Agencia de Seguros!\\n\\nSoy vuestro asistente virtual. ¿En qué puedo ayudaros?\\n\\n1️⃣ Solicitar cotización\\n2️⃣ Consultar mi póliza\\n3️⃣ Reportar siniestro\\n4️⃣ Estado de pagos\\n5️⃣ Preguntas frecuentes\\n6️⃣ Hablar con un agente\\n\\nReplied con el número de la opción.'\n  }\n};\n\nreturn [{ json: { phoneNumberId, token, mensaje } }];"
+      },
+      "id": "msg-bienvenida",
+      "name": "Mensaje Bienvenida",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "const from = $input.first().json.from;\nconst phoneNumberId = 'TU_PHONE_NUMBER_ID';\nconst token = 'TU_ACCESS_TOKEN';\n\nconst mensaje = {\n  messaging_product: 'whatsapp',\n  to: from,\n  type: 'text',\n  text: {\n    body: '🚗 *Solicitud de Cotización*\\n\\n¡Perfecto! Vamos a preparar vuestra cotización personalizada.\\n\\n¿Qué tipo de seguro necesitáis?\\n\\n🚗 AUTO — Vehículo\\n❤️ VIDA — Seguro de vida\\n🏥 SALUD — Gastos médicos\\n🏠 HOGAR — Hogar o negocio\\n\\nReplied con el tipo de seguro.'\n  }\n};\n\nreturn [{ json: { phoneNumberId, token, mensaje } }];"
+      },
+      "id": "msg-cotizacion",
+      "name": "Mensaje Cotización",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "const from = $input.first().json.from;\nconst phoneNumberId = 'TU_PHONE_NUMBER_ID';\nconst token = 'TU_ACCESS_TOKEN';\n\nconst mensaje = {\n  messaging_product: 'whatsapp',\n  to: from,\n  type: 'text',\n  text: {\n    body: '📋 *Consulta de Póliza*\\n\\nPara consultar vuestra póliza necesito verificar vuestros datos.\\n\\n¿Podéis indicarme vuestro *número de póliza* o el *DNI del titular*?'\n  }\n};\n\nreturn [{ json: { phoneNumberId, token, mensaje } }];"
+      },
+      "id": "msg-poliza",
+      "name": "Mensaje Póliza",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "const from = $input.first().json.from;\nconst phoneNumberId = 'TU_PHONE_NUMBER_ID';\nconst token = 'TU_ACCESS_TOKEN';\n\nconst mensaje = {\n  messaging_product: 'whatsapp',\n  to: from,\n  type: 'text',\n  text: {\n    body: '🚨 *Reporte de Siniestro*\\n\\nLamentamos lo ocurrido. Vamos a abrir vuestro parte lo antes posible.\\n\\nNecesito los siguientes datos:\\n\\n1️⃣ Número de póliza\\n2️⃣ Fecha del siniestro\\n3️⃣ Descripción breve de lo ocurrido\\n\\nPodéis enviarlo todo en un solo mensaje.'\n  }\n};\n\nreturn [{ json: { phoneNumberId, token, mensaje } }];"
+      },
+      "id": "msg-siniestro",
+      "name": "Mensaje Siniestro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 440]
+    },
+    {
+      "parameters": {
+        "jsCode": "const from = $input.first().json.from;\nconst phoneNumberId = 'TU_PHONE_NUMBER_ID';\nconst token = 'TU_ACCESS_TOKEN';\n\nconst mensaje = {\n  messaging_product: 'whatsapp',\n  to: from,\n  type: 'text',\n  text: {\n    body: '💳 *Estado de Pagos*\\n\\nPara consultar el estado de vuestros pagos y próximos vencimientos, indicadme:\\n\\n🔹 Número de póliza o DNI del titular\\n\\nOs informaremos del estado en breve.'\n  }\n};\n\nreturn [{ json: { phoneNumberId, token, mensaje } }];"
+      },
+      "id": "msg-pagos",
+      "name": "Mensaje Pagos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "const from = $input.first().json.from;\nconst phoneNumberId = 'TU_PHONE_NUMBER_ID';\nconst token = 'TU_ACCESS_TOKEN';\n\nconst mensaje = {\n  messaging_product: 'whatsapp',\n  to: from,\n  type: 'text',\n  text: {\n    body: '❓ *Preguntas Frecuentes*\\n\\n📌 *¿Cómo puedo modificar mi póliza?*\\nContactad con vuestro agente o escribidnos aquí.\\n\\n📌 *¿Cuándo vence mi póliza?*\\nOs enviamos un recordatorio 30 días antes.\\n\\n📌 *¿Cómo pago mi seguro?*\\nAceptamos domiciliación bancaria, tarjeta y transferencia.\\n\\n📌 *¿Cómo reporto un siniestro urgente?*\\nEscribid *3* en este chat o llamad al número de emergencias de vuestra póliza.\\n\\n¿Necesitáis más información? Escribid *6* para hablar con un agente.'\n  }\n};\n\nreturn [{ json: { phoneNumberId, token, mensaje } }];"
+      },
+      "id": "msg-faq",
+      "name": "Mensaje FAQ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "const from = $input.first().json.from;\nconst phoneNumberId = 'TU_PHONE_NUMBER_ID';\nconst token = 'TU_ACCESS_TOKEN';\n\nconst mensaje = {\n  messaging_product: 'whatsapp',\n  to: from,\n  type: 'text',\n  text: {\n    body: '👨‍💼 *Hablar con un Agente*\\n\\nEn seguida os ponemos en contacto con uno de nuestros agentes.\\n\\n🕐 Horario de atención: Lunes a Viernes 9h-18h\\n\\nSi estáis fuera de horario, dejadnos vuestro mensaje y os contactaremos en cuanto abramos. ¡Gracias por vuestra paciencia!'\n  }\n};\n\nreturn [{ json: { phoneNumberId, token, mensaje } }];"
+      },
+      "id": "msg-agente",
+      "name": "Mensaje Agente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 680]
+    },
+    {
+      "parameters": {
+        "jsCode": "const from = $input.first().json.from;\nconst phoneNumberId = 'TU_PHONE_NUMBER_ID';\nconst token = 'TU_ACCESS_TOKEN';\n\nconst mensaje = {\n  messaging_product: 'whatsapp',\n  to: from,\n  type: 'text',\n  text: {\n    body: '👋 ¡Bienvenido/a a tu Agencia de Seguros!\\n\\nSoy vuestro asistente virtual. ¿En qué puedo ayudaros?\\n\\n1️⃣ Solicitar cotización\\n2️⃣ Consultar mi póliza\\n3️⃣ Reportar siniestro\\n4️⃣ Estado de pagos\\n5️⃣ Preguntas frecuentes\\n6️⃣ Hablar con un agente\\n\\nReplied con el número de la opción.'\n  }\n};\n\nreturn [{ json: { phoneNumberId, token, mensaje } }];"
+      },
+      "id": "msg-fallback",
+      "name": "Mensaje Fallback (menú)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 760]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enviar mensaje via API de WhatsApp\nconst { phoneNumberId, token, mensaje } = $input.first().json;\n\nconst response = await fetch(\n  `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,\n  {\n    method: 'POST',\n    headers: {\n      'Authorization': `Bearer ${token}`,\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify(mensaje)\n  }\n);\n\nconst result = await response.json();\nreturn [{ json: result }];"
+      },
+      "id": "send-whatsapp",
+      "name": "Enviar por WhatsApp API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 460]
+    }
+  ],
+  "connections": {
+    "Webhook WhatsApp": {
+      "main": [
+        [
+          { "node": "Responder OK a Meta", "type": "main", "index": 0 },
+          { "node": "Extraer Mensaje", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Extraer Mensaje": {
+      "main": [
+        [{ "node": "¿Qué opción eligió?", "type": "main", "index": 0 }]
+      ]
+    },
+    "¿Qué opción eligió?": {
+      "main": [
+        [{ "node": "Mensaje Cotización", "type": "main", "index": 0 }],
+        [{ "node": "Mensaje Póliza", "type": "main", "index": 0 }],
+        [{ "node": "Mensaje Siniestro", "type": "main", "index": 0 }],
+        [{ "node": "Mensaje Pagos", "type": "main", "index": 0 }],
+        [{ "node": "Mensaje FAQ", "type": "main", "index": 0 }],
+        [{ "node": "Mensaje Agente", "type": "main", "index": 0 }],
+        [{ "node": "Mensaje Fallback (menú)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Mensaje Bienvenida": {
+      "main": [[{ "node": "Enviar por WhatsApp API", "type": "main", "index": 0 }]]
+    },
+    "Mensaje Cotización": {
+      "main": [[{ "node": "Enviar por WhatsApp API", "type": "main", "index": 0 }]]
+    },
+    "Mensaje Póliza": {
+      "main": [[{ "node": "Enviar por WhatsApp API", "type": "main", "index": 0 }]]
+    },
+    "Mensaje Siniestro": {
+      "main": [[{ "node": "Enviar por WhatsApp API", "type": "main", "index": 0 }]]
+    },
+    "Mensaje Pagos": {
+      "main": [[{ "node": "Enviar por WhatsApp API", "type": "main", "index": 0 }]]
+    },
+    "Mensaje FAQ": {
+      "main": [[{ "node": "Enviar por WhatsApp API", "type": "main", "index": 0 }]]
+    },
+    "Mensaje Agente": {
+      "main": [[{ "node": "Enviar por WhatsApp API", "type": "main", "index": 0 }]]
+    },
+    "Mensaje Fallback (menú)": {
+      "main": [[{ "node": "Enviar por WhatsApp API", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "nebulosa-digital"
+  }
+}
